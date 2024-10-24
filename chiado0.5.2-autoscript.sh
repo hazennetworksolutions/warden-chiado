@@ -225,14 +225,10 @@ sed -i -e "s/^pruning-keep-recent *=.*/pruning-keep-recent = \"100\"/" $HOME/.wa
 sed -i -e "s/^pruning-interval *=.*/pruning-interval = \"50\"/" $HOME/.warden/config/app.toml
 
 # Download the snapshot
-printGreen "12. Downloading snapshot and starting node..." && sleep 1
+# printGreen "12. Downloading snapshot and starting node..." && sleep 1
 
-wardend tendermint unsafe-reset-all --home $HOME/.warden
-if curl -s --head curl http://37.120.189.81/warden_chi_testnet/warden_snap.tar.lz4 | head -n 1 | grep "200" > /dev/null; then
-  curl http://37.120.189.81/warden_chi_testnet/warden_snap.tar.lz4 | lz4 -dc - | tar -xf - -C $HOME/.warden
-    else
-  echo no have snap
-fi
+
+
 
 
 # Start the node
