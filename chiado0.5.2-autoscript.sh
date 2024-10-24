@@ -155,16 +155,16 @@ cd $HOME
 mv $HOME/bin/wardend $HOME/.warden/cosmovisor/genesis/bin/
 
 # Create symlinks
-printGreen "3. Creating symlinks..." && sleep 1
+printGreen "4. Creating symlinks..." && sleep 1
 sudo ln -s $HOME/.warden/cosmovisor/genesis $HOME/.warden/cosmovisor/current -f
 sudo ln -s $HOME/.warden/cosmovisor/current/bin/wardend /usr/local/bin/wardend -f
 
 # Installi Cosmovisor
-printGreen "3. Installing Cosmovisor..." && sleep 1
+printGreen "5. Installing Cosmovisor..." && sleep 1
 go install cosmossdk.io/tools/cosmovisor/cmd/cosmovisor@v1.5.0
 
 # Create service file
-printGreen "4. Creating service file..." && sleep 1
+printGreen "6. Creating service file..." && sleep 1
 sudo tee /etc/systemd/system/wardend.service > /dev/null << EOF
 [Unit]
 Description=warden node service
@@ -190,19 +190,19 @@ sudo systemctl daemon-reload
 sudo systemctl enable wardend
 
 # Initialize the node
-printGreen "5. Initializing the node..."
+printGreen "7. Initializing the node..."
 wardend config set client chain-id ${WARDEN_CHAIN_ID}
 wardend config set client keyring-backend test
 wardend config set client node tcp://localhost:${WARDEN_PORT}657
 wardend init ${MONIKER} --chain-id ${WARDEN_CHAIN_ID}
 
 # Download genesis and addrbook files
-printGreen "6. Downloading genesis and addrbook..."
+printGreen "8. Downloading genesis and addrbook..."
 curl -Ls https://raw.githubusercontent.com/hazennetworksolutions/warden-chiado/refs/heads/main/genesis.json > $HOME/.warden/config/genesis.json
 wget -O $HOME/.warden/config/addrbook.json "https://raw.githubusercontent.com/hazennetworksolutions/warden-chiado/refs/heads/main/addrbook.json"
 
 # Configure gas prices and ports
-printGreen "7. Configuring custom ports and gas prices..." && sleep 1
+printGreen "9. Configuring custom ports and gas prices..." && sleep 1
 sed -i.bak -e "s/^minimum-gas-prices *=.*/minimum-gas-prices = \"250000000000000award\"/;" ~/.warden/config/app.toml
 sed -i.bak -e "s%:1317%:${WARDEN_PORT}317%g; s%:8080%:${WARDEN_PORT}080%g; s%:9090%:${WARDEN_PORT}090%g; s%:9091%:${WARDEN_PORT}091%g; s%:8545%:${WARDEN_PORT}545%g; s%:8546%:${WARDEN_PORT}546%g; s%:6065%:${WARDEN_PORT}065%g" $HOME/.warden/config/app.toml
 
@@ -210,7 +210,7 @@ sed -i.bak -e "s%:1317%:${WARDEN_PORT}317%g; s%:8080%:${WARDEN_PORT}080%g; s%:90
 sed -i.bak -e "s%:26658%:${WARDEN_PORT}658%g; s%:26657%:${WARDEN_PORT}657%g; s%:6060%:${WARDEN_PORT}060%g; s%:26656%:${WARDEN_PORT}656%g; s%^external_address = \"\"%external_address = \"$(wget -qO- eth0.me):${WARDEN_PORT}656\"%" $HOME/.warden/config/config.toml
 
 # Set up seeds and peers
-printGreen "8. Setting up peers and seeds..." && sleep 1
+printGreen "10. Setting up peers and seeds..." && sleep 1
 SEEDS="8288657cb2ba075f600911685670517d18f54f3b@warden-testnet-seed.itrocket.net:18656"
 PEERS="b14f35c07c1b2e58c4a1c1727c89a5933739eeea@warden-testnet-peer.itrocket.net:18656,5461e7642520a1f8427ffaa57f9d39cf345fcd47@54.72.190.0:26656,2d2c7af1c2d28408f437aef3d034087f40b85401@52.51.132.79:26656"
 sed -i -e "/^\[p2p\]/,/^\[/{s/^[[:space:]]*seeds *=.*/seeds = \"$SEEDS\"/}" \
@@ -218,19 +218,29 @@ sed -i -e "/^\[p2p\]/,/^\[/{s/^[[:space:]]*seeds *=.*/seeds = \"$SEEDS\"/}" \
 sed -i.bak -e "s/^seeds = \"\"/seeds = \"$SEEDS\"/" $HOME/.warden/config/config.toml
 sed -i.bak -e "s/^persistent_peers = \"\"/persistent_peers = \"$PEERS\"/" $HOME/.warden/config/config.toml
 
-# Download the snapshot
-printGreen "9. Downloading snapshot and starting node..." && sleep 1
+# Pruning Settings
+printGreen "12. Setting up pruning config..." && sleep 1
+sed -i -e "s/^pruning *=.*/pruning = \"custom\"/" $HOME/.warden/config/app.toml
+sed -i -e "s/^pruning-keep-recent *=.*/pruning-keep-recent = \"100\"/" $HOME/.warden/config/app.toml
+sed -i -e "s/^pruning-interval *=.*/pruning-interval = \"50\"/" $HOME/.warden/config/app.toml
 
-wardend tendermint unsafe-reset-all --home $HOME/.warden --keep-addr-book
-curl https://snapshots-testnet.nodejumper.io/warden/warden_latest.tar.lz4 | lz4 -dc - | tar -xf - -C $HOME/.warden
+# Download the snapshot
+printGreen "12. Downloading snapshot and starting node..." && sleep 1
+
+wardend tendermint unsafe-reset-all --home $HOME/.warden
+if curl -s --head curl http://37.120.189.81/warden_chi_testnet/warden_snap.tar.lz4 | head -n 1 | grep "200" > /dev/null; then
+  curl http://37.120.189.81/warden_chi_testnet/warden_snap.tar.lz4 | lz4 -dc - | tar -xf - -C $HOME/.warden
+    else
+  echo no have snap
+fi
 
 
 # Start the node
-printGreen "10. Starting the node..."
+printGreen "13. Starting the node..."
 sudo systemctl start wardend
 
 # Check node status
-printGreen "11. Checking node status..."
+printGreen "14. Checking node status..."
 sudo journalctl -u wardend -f -o cat
 
 # Verify if the node is running
