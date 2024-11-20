@@ -78,7 +78,7 @@ printLogo() {
 # Display Logo and Welcome Message
 clear
 printLogo
-printGreen "Welcome to the Warden & Slinky Setup Menu"
+printGreen "Welcome to the Warden Protocol & Slinky Setup Menu"
 
 # Menu options
 PS3="Please select the script you want to run: "
@@ -89,7 +89,7 @@ select opt in "${options[@]}"; do
     case $opt in
         "Install Warden")
             printGreen "Starting Warden installation..."
-            bash <(curl -s https://raw.githubusercontent.com/hazennetworksolutions/warden-chiado/refs/heads/main/chiado0.5.2-autoscript.sh)
+            bash <(curl -s https://raw.githubusercontent.com/hazennetworksolutions/warden-chiado/refs/heads/main/chiado0.5.4-autoscript.sh)
             break
             ;;
         "Install Slinky")
